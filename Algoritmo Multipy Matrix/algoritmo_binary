@@ -1,0 +1,103 @@
+-> Na memória de dados, de 01 a 0F está armazenada a matriz 01, de 10 a 1F está armazenada a matriz 02 e de 20 a 2F está alocado o espaço para a matriz resultante da operação de produto;
+-> O endereço 30 armazena um valor constante 0 (útil para inicializar linha, coluna e somaprod como 0 utilizando LW);
+-> A memória de dados pode ser utilizada para outras operações a partir do endreço 31 (em hex);
+-> O registrador 15 (reg15/1111) sempre armazena o valor 0.
+
+### CONSTANTES ###
+// Carrega no registrador 00 o valor do lado da matriz (4)
+0. 001 0000 0000 0000000000000100 00000 (ADDI reg0, reg0, 4 -> reg0 = reg0 + 4) [todo reg é inicializado com 0]
+
+// Carrega no registrador 01 o endereço da matriz 01
+1. 001 0001 0001 0000000000000000 00000 (ADDI reg1, reg1, 0 -> reg1 = reg1 + 0) [endereço do primeiro elemento da matriz 01 fica no endereço 0 da memória]
+
+// Carrega no registrador 02 o endereço da matriz 02
+2. 001 0010 0010 0000000000010000 00000 (ADDI reg2, reg2, 16 -> reg2 = reg2 + 16) [endereço do primeiro elemento da matriz 02 fica no endereço 16 da memória]
+
+// Carrega no registrador 03 o endereço da matriz 03
+3. 001 0011 0011 0000000000100000 00000 (ADDI reg3, reg3, 32 -> reg3 = reg3 + 32) [endereço do primeiro elemento da matriz 03 fica no endereço 32 da memória]
+
+### INICIO DOS LOOPS ###
+// Inicializa a variável da linha no registrador 04
+4. 010 1111 0100 0000000000110000 00000 (LW reg4 = Memory[reg15 + 48]) [linha = 0]
+
+### outer_loop
+// Define condição de parada do loop externo utilizando BGE
+5. 100 0100 0000 0000000000011111 00000 (BGE if(reg4 >= 4) go to exit_outer_loop) ##########################
+
+// Inicializa a variável da coluna no registrador 05
+6. 010 1111 0101 0000000000110000 00000 (LW reg5 = Memory[reg15 + 48]) [coluna = 0]
+
+### inner_loop
+// Define condição de parada do loop interno utilizando BGE
+7. 100 0101 0000 0000000000011101 00000 (BGE if(reg5 >= 4) go to exit_inner_loop) ##########################
+
+// Inicializa variável para armazenar a soma dos produtos no registrador 06
+8. 010 1111 0110 0000000000110000 00000 (LW reg6 = Memory[reg15 + 48]) [somaprod = 0]
+
+// Inicializa variável para armazenar o valor de i no registrador 07
+9. 010 1111 0111 0000000000110000 00000 (LW reg7 = Memory[reg15 + 48]) [i = 0]
+
+### inner_most_loop
+// Define condição de parada do loop interno utilizando BGE
+10. 100 0111 0000 0000000000010111 00000 (BGE if(reg7 >= 4) go to exit_inner_most_loop) ##########################
+
+// Calcula o endereço mat1[linha][i]
+11. 000 0100 0000 1000 00000 001 0000 00000 (MUL reg8 = linha * 4)
+
+12. 000 1000 0111 1000 00000 000 0000 00000 (ADD reg8 = reg8 + i)
+
+13. 000 1000 0001 1000 00000 000 0000 00000 (ADD reg8 = reg8 + reg1) # Obtem o endereço do elemento baseado no offset
+
+14. 010 1000 1001 0000000000000000 00000 (LW reg9 = Memory[reg8 + 0] # Carrega o valor do endereço
+
+// Calcula o endereço mat2[i][coluna]
+15. 000 0111 0000 1010 00000 001 0000 00000 (MUL reg10 = i * 4)
+
+16. 000 1010 0101 1010 00000 000 0000 00000 (ADD reg10 = reg10 + coluna)
+
+17. 000 1010 0010 1010 00000 000 0000 00000 (ADD reg10 = reg10 + reg2) # Obtem o endereço do elemento baseado no offset
+
+18. 010 1010 1011 0000000000000000 00000 (LW reg11 = Memory[reg10 + 0] # Carrega o valor do endereço
+
+// Calcula o produto e adiciona o resultado ao somaprod
+19. 000 1001 1011 1001 00000 001 0000 00000 (MUL reg9 = mat1[linha][i] * mat2[i][coluna])
+
+20. 000 1001 0110 0110 00000 000 0000 00000 (ADD somaprod = reg9 + somaprod)
+
+// Incrementa i e pula de volta pro inner_most_loop
+21. 001 0111 0111 0000000000000001 00000 (ADDI i = i + 1)
+
+22. 101 000000000000000000001010 00000 (JUMP inner_most_loop)
+
+### FIM DOS LOOPS ###
+
+### exit_inner_most_loop
+// Armazena somaprod em mat3[linha][coluna]
+23. 000 0100 0000 1100 00000 001 0000 00000 (MUL reg12 = linha * 4)
+
+24. 000 1100 0101 1100 00000 000 0000 00000 (ADD reg12 = reg12 + coluna)
+
+25. 000 1100 0011 1100 00000 000 0000 00000 (ADD reg12 = reg12 + reg3) # Obtem o endereço do elemento baseado no offset
+
+26. 011 1100 0110 0000000000000000 00000 (Memory[reg12 + 0] = somaprod # Armazena o valor no endereço
+
+// Incrementa coluna e pula para inner_loop
+27. 001 0101 0101 0000000000000001 00000 (ADDI coluna = coluna + 1)
+
+28. 101 000000000000000000000111 00000 (JUMP inner_loop)
+
+### exit_inner_loop
+// Incrementa linha e pula para outer_loop
+29. 001 0100 0100 0000000000000001 00000 (ADDI linha = linha + 1)
+
+30. 101 000000000000000000000101 00000 (JUMP outer_loop)
+
+### exit_outer_loop
+// Incrementa linha e pula para outer_loop
+31. 001 1110 1110 0000000000000001 00000 (ADDI reg14 = reg14 + 1)
+
+32. 011 1111 1110 0000000000110001 00000 (Memory[reg15 + 49] = somaprod # Armazena o valor no endereço
+
+
+
+

@@ -4,10 +4,10 @@ mat1: .word 1, 2, 3, 4       # Matriz 4x4
       .word 9, 10, 11, 12
       .word 13, 14, 15, 16
 
-mat2: .word 1, 0, 0, 0       # Matriz identidade 4x4
-      .word 0, 1, 0, 0
-      .word 0, 0, 1, 0
-      .word 0, 0, 0, 1
+mat2: .word 1, 2, 3, 4       # Matriz 4x4
+      .word 5, 6, 7, 8
+      .word 9, 10, 11, 12
+      .word 13, 14, 15, 16
 
 mat3: .space 64              # Matriz resultado 4x4 (4 * 4 * 4)
 
